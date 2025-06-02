@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tebak Bendera Negara</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Gaya dasar untuk body dan container game */
+        body {
+            font-family: 'Inter', sans-serif; /* Menggunakan font Inter untuk tampilan yang bersih */
+            background-color: #f0f4f8; /* Warna latar belakang lembut */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Memastikan body mengisi seluruh tinggi viewport */
+            margin: 0;
+            padding: 1rem; /* Padding untuk layar kecil */
+        }
+        .container {
+            background-color: #ffffff; /* Latar belakang putih untuk container game */
+            border-radius: 12px; /* Sudut membulat */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Bayangan lembut */
+            padding: 2.5rem; /* Padding internal */
+            width: 100%;
+            max-width: 500px; /* Lebar maksimum untuk tampilan desktop */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Jarak antar elemen */
+        }
+        /* Gaya untuk input, select, dan button */
+        input, select, button {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 1rem;
+            width: 100%;
+            box-sizing: border-box; /* Memastikan padding tidak menambah lebar */
+        }
+        /* Gaya untuk tombol utama */
+        button {
+            background-color: #4f46e5; /* Warna ungu indigo */
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out; /* Efek transisi halus */
+        }
+        button:hover {
+            background-color: #4338ca; /* Warna ungu yang lebih gelap saat hover */
+            transform: translateY(-1px); /* Sedikit naik saat hover */
+        }
+        button:active {
+            transform: translateY(0); /* Kembali ke posisi semula saat diklik */
+        }
+        /* Gaya untuk tombol sekunder */
+        .btn-secondary {
+            background-color: #6b7280; /* Warna abu-abu */
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* Warna abu-abu yang lebih gelap saat hover */
+        }
+        /* Gaya untuk gambar bendera */
+        .flag-image {
+            width: 150px;
+            height: 100px;
+            border: 1px solid #e2e8f0; /* Border tipis */
+            border-radius: 8px;
+            object-fit: contain; /* Memastikan gambar bendera terlihat penuh */
+            margin: 0 auto; /* Pusatkan gambar */
+        }
+        /* Gaya untuk tampilan timer */
+        .timer-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #ef4444; /* Warna merah untuk timer */
+        }
+        /* Gaya untuk tampilan skor */
+        .score-display {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #10b981; /* Warna hijau untuk skor */
+        }
+        /* Gaya untuk pesan game (benar/salah) */
+        .message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .correct {
+            color: #10b981; /* Warna hijau untuk jawaban benar */
+        }
+        .incorrect {
+            color: #ef4444; /* Warna merah untuk jawaban salah */
+        }
+        /* Gaya untuk daftar pemain */
+        .player-list {
+            list-style: none; /* Hapus bullet point */
+            padding: 0;
+            margin: 1rem 0;
+            text-align: left;
+        }
+        .player-list li {
+            background-color: #f8fafc; /* Latar belakang item daftar */
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between; /* Rata kiri dan kanan */
+            align-items: center;
+        }
+        .player-list li span:first-child {
+            font-weight: 600; /* Tebalkan nama pemain */
+        }
+        /* Gaya untuk modal kustom */
+        .modal {
+            position: fixed; /* Tetap di viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); /* Overlay transparan */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Pastikan modal di atas elemen lain */
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%; /* Responsif untuk lebar modal */
+        }
+        .modal-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        .modal-content p {
+            margin-bottom: 1.5rem;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="game-container">
+        <div id="welcome-screen">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Tebak Bendera Negara</h1>
+            <input type="text" id="player-name-input" placeholder="Masukkan Nama Anda" class="mb-3">
+            <input type="text" id="room-name-input" placeholder="Masukkan Nama Room (contoh: Room123)" class="mb-4">
+            <button id="create-room-btn" class="mb-2">Buat Room Baru</button>
+            <button id="join-room-btn" class="btn-secondary">Gabung Room</button>
+            <p class="text-sm text-gray-600 mt-4">Catatan: Untuk bermain bersama, semua pemain harus bergabung ke room dengan nama yang SAMA.</p>
+        </div>
+
+        <div id="lobby-screen" class="hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Lobby Room: <span id="current-room-display"></span></h2>
+            <p class="text-lg text-gray-700 mb-2">Pemain di Room:</p>
+            <ul id="player-list" class="player-list">
+                </ul>
+            <div id="host-controls" class="hidden">
+                <label for="level-select" class="block text-lg font-medium text-gray-700 mb-2">Pilih Level:</label>
+                <select id="level-select" class="mb-4">
+                    <option value="easy">Mudah (15 detik)</option>
+                    <option value="medium">Sedang (10 detik)</option>
+                    <option value="hard">Sulit (7 detik)</option>
+                </select>
+                <button id="start-game-btn">Mulai Game</button>
+            </div>
+            <p id="waiting-message" class="text-gray-600 italic mt-4 hidden">Menunggu host untuk memulai game...</p>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Babak <span id="round-number-display">1</span></h2>
+            <p class="timer-display" id="timer-display">15</p>
+            <img id="flag-image" class="flag-image my-4" src="" alt="Bendera Negara">
+            <input type="text" id="country-guess-input" placeholder="Tebak nama negara..." class="mb-3">
+            <button id="submit-guess-btn" class="mb-4">Kirim Tebakan</button>
+            <p class="message" id="game-message"></p>
+            <div class="score-display">Skor Anda: <span id="player-score-display">0</span></div>
+            <p class="text-sm text-gray-600 mt-2">Pemain Lain:</p>
+            <ul id="other-players-scores" class="player-list">
+                </ul>
+        </div>
+
+        <div id="game-over-screen" class="hidden">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Game Selesai!</h2>
+            <p class="text-xl text-gray-700 mb-4">Skor Akhir Anda: <span id="final-player-score">0</span></p>
+            <p class="text-lg text-gray-700 mb-2">Peringkat Pemain:</p>
+            <ul id="final-scores-list" class="player-list">
+                </ul>
+            <button id="play-again-btn">Main Lagi</button>
+        </div>
+    </div>
+
+    <div id="custom-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-title"></h3>
+            <p id="modal-message"></p>
+            <button id="modal-ok-btn">OK</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import modul Firebase yang diperlukan
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Variabel global untuk Firebase (WAJIB DIGUNAKAN)
+        // __app_id, __firebase_config, dan __initial_auth_token disediakan oleh lingkungan Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app;
+        let db;
+        let auth;
+        let userId = null; // ID pengguna Firebase saat ini
+        let playerName = ''; // Nama pemain yang dimasukkan
+        let currentRoomId = ''; // ID room yang sedang aktif
+        let isHost = false; // Menandakan apakah pemain adalah host room
+        let gameInterval = null; // Variabel untuk interval timer game
+        let currentRoundTimer = 0; // Waktu tersisa di babak saat ini
+        let timerDuration = 15; // Durasi timer default (untuk level mudah)
+        let currentCountry = null; // Negara yang sedang ditebak
+        let playerScore = 0; // Skor pemain saat ini
+        let roundNumber = 0; // Nomor babak saat ini
+        const MAX_ROUNDS = 5; // Jumlah maksimum babak per game
+
+        // Data negara (disederhanakan untuk contoh)
+        // Dalam aplikasi nyata, ini akan menjadi dataset yang lebih besar dan mungkin dimuat dari sumber eksternal
+        const countries = [
+            { name: "Indonesia", code: "ID" },
+            { name: "Amerika Serikat", code: "US" },
+            { name: "Kanada", code: "CA" },
+            { name: "Jerman", code: "DE" },
+            { name: "Prancis", code: "FR" },
+            { name: "Jepang", code: "JP" },
+            { name: "Australia", code: "AU" },
+            { name: "Brasil", code: "BR" },
+            { name: "India", code: "IN" },
+            { name: "Meksiko", code: "MX" },
+            { name: "Britania Raya", code: "GB" },
+            { name: "Tiongkok", code: "CN" },
+            { name: "Rusia", code: "RU" },
+            { name: "Afrika Selatan", code: "ZA" },
+            { name: "Mesir", code: "EG" },
+            { name: "Argentina", code: "AR" },
+            { name: "Korea Selatan", code: "KR" },
+            { name: "Italia", code: "IT" },
+            { name: "Spanyol", code: "ES" },
+            { name: "Belanda", code: "NL" },
+            { name: "Swedia", code: "SE" },
+            { name: "Norwegia", code: "NO" },
+            { name: "Finlandia", code: "FI" },
+            { name: "Swiss", code: "CH" },
+            { name: "Selandia Baru", code: "NZ" },
+            { name: "Turki", code: "TR" },
+            { name: "Arab Saudi", code: "SA" },
+            { name: "Uni Emirat Arab", code: "AE" },
+            { name: "Nigeria", code: "NG" },
+            { name: "Kenya", code: "KE" },
+            { name: "Vietnam", code: "VN" },
+            { name: "Thailand", code: "TH" },
+            { name: "Malaysia", code: "MY" },
+            { name: "Singapura", code: "SG" },
+            { name: "Filipina", code: "PH" },
+            { name: "Pakistan", code: "PK" },
+            { name: "Bangladesh", code: "BD" },
+            { name: "Polandia", code: "PL" },
+            { name: "Ukraina", code: "UA" },
+            { name: "Yunani", code: "GR" },
+            { name: "Portugal", code: "PT" },
+            { name: "Irlandia", code: "IE" },
+            { name: "Belgia", code: "BE" },
+            { name: "Austria", code: "AT" },
+            { name: "Denmark", code: "DK" },
+            { name: "Ceko", code: "CZ" },
+            { name: "Hungaria", code: "HU" },
+            { name: "Rumania", code: "RO" },
+            { name: "Peru", code: "PE" },
+            { name: "Kolombia", code: "CO" },
+            { name: "Chile", code: "CL" },
+            { name: "Venezuela", code: "VE" },
+            { name: "Maroko", code: "MA" },
+            { name: "Aljazair", code: "DZ" },
+            { name: "Tunisia", code: "TN" },
+            { name: "Ghana", code: "GH" },
+            { name: "Pantai Gading", code: "CI" },
+            { name: "Kamerun", code: "CM" },
+            { name: "Ethiopia", code: "ET" },
+            { name: "Maladewa", code: "MV" },
+            { name: "Mongolia", code: "MN" },
+            { name: "Kazakhstan", code: "KZ" },
+            { name: "Uzbekistan", code: "UZ" },
+            { name: "Azerbaijan", code: "AZ" },
+            { name: "Georgia", code: "GE" },
+            { name: "Armenia", code: "AM" },
+            { name: "Siprus", code: "CY" },
+            { name: "Malta", code: "MT" },
+            { name: "Luksemburg", code: "LU" },
+            { name: "Islandia", code: "IS" },
+            { name: "Kroasia", code: "HR" },
+            { name: "Serbia", code: "RS" },
+            { name: "Bosnia dan Herzegovina", code: "BA" },
+            { name: "Bulgaria", code: "BG" },
+            { name: "Albania", code: "AL" },
+            { name: "Makedonia Utara", code: "MK" },
+            { name: "Kosovo", code: "XK" }, // Kode non-ISO 3166-1 alpha-2, tapi umum digunakan
+            { name: "Montenegro", code: "ME" },
+            { name: "Slovenia", code: "SI" },
+            { name: "Slovakia", code: "SK" },
+            { name: "Latvia", code: "LV" },
+            { name: "Lituania", code: "LT" },
+            { name: "Estonia", code: "EE" },
+            { name: "Belarus", code: "BY" },
+            { name: "Moldova", code: "MD" },
+            { name: "Afganistan", code: "AF" },
+            { name: "Iran", code: "IR" },
+            { name: "Irak", code: "IQ" },
+            { name: "Suriah", code: "SY" },
+            { name: "Lebanon", code: "LB" },
+            { name: "Yordania", code: "JO" },
+            { name: "Israel", code: "IL" },
+            { name: "Palestina", code: "PS" },
+            { name: "Kuwait", code: "KW" },
+            { name: "Qatar", code: "QA" },
+            { name: "Bahrain", code: "BH" },
+            { name: "Oman", code: "OM" },
+            { name: "Yaman", code: "YE" }
+        ];
+
+        // --- Elemen DOM ---
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+
+        const playerNameInput = document.getElementById('player-name-input');
+        const roomNameInput = document.getElementById('room-name-input');
+        const createRoomBtn = document.getElementById('create-room-btn');
+        const joinRoomBtn = document.getElementById('join-room-btn');
+
+        const currentRoomDisplay = document.getElementById('current-room-display');
+        const playerList = document.getElementById('player-list');
+        const hostControls = document.getElementById('host-controls');
+        const levelSelect = document.getElementById('level-select');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const waitingMessage = document.getElementById('waiting-message');
+
+        const roundNumberDisplay = document.getElementById('round-number-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const flagImage = document.getElementById('flag-image');
+        const countryGuessInput = document.getElementById('country-guess-input');
+        const submitGuessBtn = document.getElementById('submit-guess-btn');
+        const gameMessage = document.getElementById('game-message');
+        const playerScoreDisplay = document.getElementById('player-score-display');
+        const otherPlayersScores = document.getElementById('other-players-scores');
+
+        const finalPlayerScore = document.getElementById('final-player-score');
+        const finalScoresList = document.getElementById('final-scores-list');
+        const playAgainBtn = document.getElementById('play-again-btn');
+
+        const customModal = document.getElementById('custom-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalOkBtn = document.getElementById('modal-ok-btn');
+
+        // --- Fungsi Utilitas ---
+        // Fungsi untuk menampilkan layar tertentu dan menyembunyikan yang lain
+        function showScreen(screenId) {
+            welcomeScreen.classList.add('hidden');
+            lobbyScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+        }
+
+        // Fungsi untuk menampilkan modal kustom
+        function showModal(title, message) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            customModal.classList.remove('hidden');
+        }
+
+        // Fungsi untuk menyembunyikan modal kustom
+        function hideModal() {
+            customModal.classList.add('hidden');
+        }
+
+        // Fungsi untuk mengacak array (digunakan untuk mengacak urutan bendera)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- Inisialisasi Firebase dan Autentikasi ---
+        window.onload = async () => {
+            try {
+                // Inisialisasi aplikasi Firebase
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Masuk dengan token kustom jika tersedia, jika tidak, secara anonim
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Mendengarkan perubahan status autentikasi
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid; // Simpan ID pengguna
+                        console.log("Firebase berhasil diinisialisasi dan diautentikasi. User ID:", userId);
+                        showScreen('welcome-screen'); // Tampilkan layar selamat datang setelah autentikasi
+                    } else {
+                        console.log("Tidak ada pengguna yang masuk.");
+                        showModal("Error", "Gagal melakukan autentikasi Firebase. Silakan coba lagi.");
+                    }
+                });
+            } catch (error) {
+                console.error("Error saat menginisialisasi Firebase:", error);
+                showModal("Error", "Gagal menginisialisasi Firebase: " + error.message);
+            }
+        };
+
+        // --- Manajemen Room ---
+        // Event listener untuk tombol "Buat Room Baru"
+        createRoomBtn.addEventListener('click', async () => {
+            playerName = playerNameInput.value.trim();
+            currentRoomId = roomNameInput.value.trim();
+
+            if (!playerName || !currentRoomId) {
+                showModal("Input Diperlukan", "Nama pemain dan nama room tidak boleh kosong.");
+                return;
+            }
+
+            try {
+                const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+                const roomSnap = await getDoc(roomRef);
+
+                if (roomSnap.exists()) {
+                    showModal("Room Sudah Ada", `Room '${currentRoomId}' sudah ada. Silakan gabung atau gunakan nama room lain.`);
+                    return;
+                }
+
+                // Buat room baru di Firestore
+                await setDoc(roomRef, {
+                    players: [{ id: userId, name: playerName, score: 0, isHost: true }], // Tambahkan pemain host
+                    hostId: userId,
+                    level: 'easy', // Level default
+                    gameStarted: false,
+                    roundNumber: 0,
+                    currentFlagIndex: -1,
+                    currentCountryName: '',
+                    timerEndTime: 0,
+                    gameEnded: false,
+                    correctGuessers: []
+                });
+                isHost = true; // Set pemain sebagai host
+                joinRoom(currentRoomId); // Gabung ke room yang baru dibuat
+            } catch (error) {
+                console.error("Error saat membuat room:", error);
+                showModal("Error", "Gagal membuat room: " + error.message);
+            }
+        });
+
+        // Event listener untuk tombol "Gabung Room"
+        joinRoomBtn.addEventListener('click', async () => {
+            playerName = playerNameInput.value.trim();
+            currentRoomId = roomNameInput.value.trim();
+
+            if (!playerName || !currentRoomId) {
+                showModal("Input Diperlukan", "Nama pemain dan nama room tidak boleh kosong.");
+                return;
+            }
+
+            try {
+                const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+                const roomSnap = await getDoc(roomRef);
+
+                if (!roomSnap.exists()) {
+                    showModal("Room Tidak Ditemukan", `Room '${currentRoomId}' tidak ditemukan. Silakan periksa nama room atau buat yang baru.`);
+                    return;
+                }
+
+                const roomData = roomSnap.data();
+                // Periksa apakah pemain sudah ada di room
+                if (roomData.players.some(p => p.id === userId)) {
+                    showModal("Sudah Bergabung", "Anda sudah berada di room ini.");
+                    joinRoom(currentRoomId); // Gabung kembali untuk memperbarui UI
+                    return;
+                }
+
+                // Tambahkan pemain ke room yang sudah ada
+                const updatedPlayers = [...roomData.players, { id: userId, name: playerName, score: 0, isHost: false }];
+                await updateDoc(roomRef, { players: updatedPlayers });
+                isHost = false; // Set pemain bukan sebagai host
+                joinRoom(currentRoomId); // Gabung ke room
+            } catch (error) {
+                console.error("Error saat bergabung ke room:", error);
+                showModal("Error", "Gagal bergabung ke room: " + error.message);
+            }
+        });
+
+        // Fungsi untuk bergabung ke room dan mulai mendengarkan update
+        function joinRoom(roomId) {
+            currentRoomDisplay.textContent = roomId;
+            showScreen('lobby-screen'); // Tampilkan layar lobby
+
+            // Tampilkan/sembunyikan kontrol host
+            if (isHost) {
+                hostControls.classList.remove('hidden');
+                waitingMessage.classList.add('hidden');
+            } else {
+                hostControls.classList.add('hidden');
+                waitingMessage.classList.remove('hidden');
+            }
+
+            // Mendengarkan update real-time ke dokumen room
+            const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, roomId);
+            onSnapshot(roomRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const roomData = docSnap.data();
+                    updateLobbyUI(roomData.players); // Perbarui daftar pemain di lobby
+
+                    // Perbarui status game lokal berdasarkan data room
+                    currentRoomId = docSnap.id;
+                    timerDuration = getTimerDuration(roomData.level);
+                    roundNumber = roomData.roundNumber;
+                    playerScore = roomData.players.find(p => p.id === userId)?.score || 0;
+                    playerScoreDisplay.textContent = playerScore;
+
+                    // Perubahan status game
+                    if (roomData.gameStarted && !gameScreen.classList.contains('hidden')) {
+                        // Game sedang berlangsung, perbarui bendera dan timer
+                        if (roomData.currentFlagIndex !== -1 && countries[roomData.currentFlagIndex]) {
+                            currentCountry = countries[roomData.currentFlagIndex];
+                            flagImage.src = `https://flagsapi.com/${currentCountry.code}/flat/64.png`;
+                            flagImage.alt = `Bendera ${currentCountry.name}`;
+                            roundNumberDisplay.textContent = roomData.roundNumber;
+                            gameMessage.textContent = ''; // Bersihkan pesan sebelumnya
+                            countryGuessInput.value = ''; // Bersihkan input
+                            countryGuessInput.disabled = false;
+                            submitGuessBtn.disabled = false;
+
+                            // Mulai/perbarui timer
+                            clearInterval(gameInterval);
+                            const remainingTime = Math.max(0, Math.floor((roomData.timerEndTime - Date.now()) / 1000));
+                            currentRoundTimer = remainingTime;
+                            timerDisplay.textContent = currentRoundTimer;
+                            gameInterval = setInterval(() => {
+                                currentRoundTimer--;
+                                timerDisplay.textContent = currentRoundTimer;
+                                if (currentRoundTimer <= 0) {
+                                    clearInterval(gameInterval);
+                                    if (isHost) {
+                                        // Host melanjutkan game
+                                        handleRoundEnd(roomData);
+                                    } else {
+                                        gameMessage.textContent = `Waktu habis! Jawabannya adalah ${roomData.currentCountryName}.`;
+                                        gameMessage.classList.remove('correct');
+                                        gameMessage.classList.add('incorrect');
+                                        countryGuessInput.disabled = true;
+                                        submitGuessBtn.disabled = true;
+                                    }
+                                }
+                            }, 1000);
+                        }
+                    } else if (roomData.gameStarted && gameScreen.classList.contains('hidden')) {
+                        // Game baru saja dimulai, beralih ke layar game
+                        showScreen('game-screen');
+                        startGameBtn.disabled = true; // Nonaktifkan tombol mulai setelah game dimulai
+                    } else if (!roomData.gameStarted && !lobbyScreen.classList.contains('hidden')) {
+                        // Game berakhir atau belum dimulai, tetap di lobby
+                        startGameBtn.disabled = false; // Aktifkan tombol mulai jika game berakhir
+                    }
+
+                    if (roomData.gameEnded) {
+                        endGame(roomData.players); // Panggil endGame dengan data pemain terbaru
+                    }
+
+                    // Perbarui skor pemain lain di layar game
+                    updateOtherPlayersScores(roomData.players);
+
+                } else {
+                    // Room tidak ada lagi (misalnya, host menghapusnya)
+                    showModal("Room Dihapus", "Room yang Anda ikuti telah dihapus oleh host.");
+                    showScreen('welcome-screen');
+                    currentRoomId = '';
+                    isHost = false;
+                    clearInterval(gameInterval);
+                }
+            });
+        }
+
+        // Fungsi untuk memperbarui UI daftar pemain di lobby
+        function updateLobbyUI(players) {
+            playerList.innerHTML = '';
+            players.forEach(p => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${p.name}</span> <span>${p.id === userId ? '(Anda)' : ''} ${p.isHost ? '(Host)' : ''}</span>`;
+                playerList.appendChild(li);
+            });
+        }
+
+        // Fungsi untuk memperbarui skor pemain lain di layar game
+        function updateOtherPlayersScores(players) {
+            otherPlayersScores.innerHTML = '';
+            players.sort((a, b) => b.score - a.score); // Urutkan berdasarkan skor menurun
+            players.forEach(p => {
+                if (p.id !== userId) { // Jangan tampilkan skor pemain saat ini di daftar ini
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${p.name}</span> <span>Skor: ${p.score}</span>`;
+                    otherPlayersScores.appendChild(li);
+                }
+            });
+        }
+
+        // --- Logika Game ---
+        // Event listener untuk tombol "Mulai Game" (hanya untuk host)
+        startGameBtn.addEventListener('click', async () => {
+            if (!isHost) return; // Hanya host yang bisa memulai game
+
+            const selectedLevel = levelSelect.value;
+            timerDuration = getTimerDuration(selectedLevel);
+            roundNumber = 0; // Reset nomor babak untuk game baru
+
+            try {
+                const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+                // Perbarui status room di Firestore
+                await updateDoc(roomRef, {
+                    gameStarted: true,
+                    level: selectedLevel,
+                    roundNumber: 0, // Akan diincrement di startNewRound
+                    gameEnded: false,
+                    // Reset semua skor pemain
+                    players: (await getDoc(roomRef)).data().players.map(p => ({ ...p, score: 0, correctGuessers: [] }))
+                });
+                startNewRound(); // Mulai babak pertama
+            } catch (error) {
+                console.error("Error saat memulai game:", error);
+                showModal("Error", "Gagal memulai game: " + error.message);
+            }
+        });
+
+        // Fungsi untuk mendapatkan durasi timer berdasarkan level
+        function getTimerDuration(level) {
+            switch (level) {
+                case 'easy': return 15;
+                case 'medium': return 10;
+                case 'hard': return 7;
+                default: return 15;
+            }
+        }
+
+        // Fungsi untuk memulai babak baru (hanya host yang memicu)
+        async function startNewRound() {
+            if (!isHost) return;
+
+            roundNumber++;
+            if (roundNumber > MAX_ROUNDS) {
+                endGame(); // Jika semua babak selesai, akhiri game
+                return;
+            }
+
+            const availableCountries = shuffleArray([...countries]); // Acak daftar negara
+            const randomIndex = Math.floor(Math.random() * availableCountries.length);
+            currentCountry = availableCountries[randomIndex];
+
+            const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+            // Perbarui status room di Firestore untuk babak baru
+            await updateDoc(roomRef, {
+                roundNumber: roundNumber,
+                currentFlagIndex: countries.findIndex(c => c.code === currentCountry.code), // Simpan indeks untuk pemain lain
+                currentCountryName: currentCountry.name,
+                timerEndTime: Date.now() + (timerDuration * 1000), // Waktu berakhir timer
+                correctGuessers: [], // Reset daftar penebak benar untuk babak baru
+                gameEnded: false // Pastikan game tidak ditandai sebagai berakhir
+            });
+
+            // Perbarui UI untuk host
+            roundNumberDisplay.textContent = roundNumber;
+            flagImage.src = `https://flagsapi.com/${currentCountry.code}/flat/64.png`;
+            flagImage.alt = `Bendera ${currentCountry.name}`;
+            countryGuessInput.value = '';
+            countryGuessInput.disabled = false;
+            submitGuessBtn.disabled = false;
+            gameMessage.textContent = '';
+
+            clearInterval(gameInterval); // Hentikan timer sebelumnya
+            currentRoundTimer = timerDuration;
+            timerDisplay.textContent = currentRoundTimer;
+            // Mulai timer countdown
+            gameInterval = setInterval(() => {
+                currentRoundTimer--;
+                timerDisplay.textContent = currentRoundTimer;
+                if (currentRoundTimer <= 0) {
+                    clearInterval(gameInterval);
+                    handleRoundEnd(); // Panggil fungsi akhir babak saat timer habis
+                }
+            }, 1000);
+        }
+
+        // Event listener untuk tombol "Kirim Tebakan"
+        submitGuessBtn.addEventListener('click', async () => {
+            const guess = countryGuessInput.value.trim();
+            if (!guess) {
+                showModal("Tebakan Kosong", "Silakan masukkan tebakan Anda.");
+                return;
+            }
+
+            // Nonaktifkan input dan tombol segera untuk mencegah pengiriman ganda
+            countryGuessInput.disabled = true;
+            submitGuessBtn.disabled = true;
+
+            try {
+                const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+                const roomSnap = await getDoc(roomRef);
+                if (!roomSnap.exists()) {
+                    showModal("Error", "Room tidak ditemukan.");
+                    return;
+                }
+                const roomData = roomSnap.data();
+
+                // Periksa apakah pemain sudah menebak dengan benar di babak ini
+                if (roomData.correctGuessers.includes(userId)) {
+                    gameMessage.textContent = "Anda sudah menebak dengan benar di babak ini!";
+                    countryGuessInput.disabled = true; // Pastikan tetap disabled
+                    submitGuessBtn.disabled = true; // Pastikan tetap disabled
+                    return;
+                }
+
+                // Periksa jawaban terhadap nama negara yang benar dari Firestore
+                const correctCountryName = roomData.currentCountryName;
+                if (guess.toLowerCase() === correctCountryName.toLowerCase()) {
+                    gameMessage.textContent = "Benar! Anda mendapatkan poin.";
+                    gameMessage.classList.remove('incorrect');
+                    gameMessage.classList.add('correct');
+
+                    // Perbarui skor pemain dan tambahkan ke daftar penebak benar
+                    const updatedPlayers = roomData.players.map(p =>
+                        p.id === userId ? { ...p, score: p.score + 1 } : p
+                    );
+                    const updatedCorrectGuessers = [...roomData.correctGuessers, userId];
+
+                    await updateDoc(roomRef, {
+                        players: updatedPlayers,
+                        correctGuessers: updatedCorrectGuessers
+                    });
+                } else {
+                    gameMessage.textContent = `Salah! Jawabannya adalah ${correctCountryName}.`;
+                    gameMessage.classList.remove('correct');
+                    gameMessage.classList.add('incorrect');
+                }
+            } catch (error) {
+                console.error("Error saat mengirim tebakan:", error);
+                showModal("Error", "Gagal mengirim tebakan: " + error.message);
+            } finally {
+                // Aktifkan kembali input jika babak masih aktif dan belum menebak dengan benar
+                // Perlu mengambil data room terbaru karena state bisa berubah oleh pemain lain
+                const roomSnapAfterGuess = await getDoc(doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId));
+                const roomDataAfterGuess = roomSnapAfterGuess.data();
+                // Hanya aktifkan jika belum menebak benar dan timer masih berjalan
+                if (!roomDataAfterGuess.correctGuessers.includes(userId) && roomDataAfterGuess.timerEndTime > Date.now()) {
+                    countryGuessInput.disabled = false;
+                    submitGuessBtn.disabled = false;
+                }
+            }
+        });
+
+        // Fungsi untuk menangani akhir babak (hanya host yang memicu)
+        async function handleRoundEnd() {
+            if (!isHost) return; // Hanya host yang menangani progresi babak
+
+            const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+            const roomSnap = await getDoc(roomRef);
+            const roomData = roomSnap.data();
+
+            if (roomData.roundNumber < MAX_ROUNDS) {
+                // Tunggu sebentar sebelum memulai babak berikutnya agar pemain bisa melihat hasil
+                setTimeout(() => {
+                    startNewRound();
+                }, 3000); // Penundaan 3 detik
+            } else {
+                // Game berakhir
+                endGame(roomData.players);
+            }
+        }
+
+        // Fungsi untuk mengakhiri game
+        async function endGame(finalPlayers = []) {
+            clearInterval(gameInterval); // Hentikan timer yang berjalan
+
+            if (isHost) {
+                const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+                await updateDoc(roomRef, {
+                    gameStarted: false,
+                    gameEnded: true
+                });
+            }
+
+            // Dapatkan skor akhir dari data room terbaru jika tidak diteruskan sebagai argumen
+            let playersData = finalPlayers;
+            if (finalPlayers.length === 0) {
+                const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+                const roomSnap = await getDoc(roomRef);
+                if (roomSnap.exists()) {
+                    playersData = roomSnap.data().players;
+                }
+            }
+
+            // Urutkan pemain berdasarkan skor untuk peringkat
+            playersData.sort((a, b) => b.score - a.score);
+
+            finalPlayerScore.textContent = playerScore;
+            finalScoresList.innerHTML = '';
+            playersData.forEach((p, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${index + 1}. ${p.name} ${p.id === userId ? '(Anda)' : ''}</span> <span>Skor: ${p.score}</span>`;
+                finalScoresList.appendChild(li);
+            });
+
+            showScreen('game-over-screen'); // Tampilkan layar game over
+        }
+
+        // Event listener untuk tombol "Main Lagi"
+        playAgainBtn.addEventListener('click', async () => {
+            // Reset status lokal
+            playerScore = 0;
+            roundNumber = 0;
+            currentCountry = null;
+            clearInterval(gameInterval);
+            timerDuration = 15; // Reset ke durasi default
+
+            // Jika host, reset status room di Firestore
+            if (isHost) {
+                const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+                await updateDoc(roomRef, {
+                    gameStarted: false,
+                    gameEnded: false,
+                    roundNumber: 0,
+                    currentFlagIndex: -1,
+                    currentCountryName: '',
+                    timerEndTime: 0,
+                    correctGuessers: [],
+                    players: (await getDoc(roomRef)).data().players.map(p => ({ ...p, score: 0 })) // Reset skor semua pemain
+                });
+            }
+            showScreen('lobby-screen'); // Kembali ke lobby
+        });
+
+        // Event listener untuk tombol OK di modal kustom
+        modalOkBtn.addEventListener('click', hideModal);
+
+        // Tangani tombol Enter pada input tebakan negara
+        countryGuessInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                submitGuessBtn.click();
+            }
+        });
+
+    </script>
+</body>
+</html>
